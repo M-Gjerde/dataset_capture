@@ -3,10 +3,10 @@
 Once completed we should have one working usable capture and we can scale up from there.
 
 
-## Milestone:
-- [ ] Choose one pilot object and recover geometry + material parameter under known illumination.
+## Final Goal:
+- [ ] Choose one simple pilot object and recover geometry + material parameters under known illumination.
 
-### 1. Put everything together
+### 1. Put everything together (Sorted by milestone difficulty)
 
 - [ ] **1. Bench capture:** Use the selected camera and controller to save one image with recorded capture settings. Requires **2 + 6**.
 - [ ] **2. Robot capture:** Mount the working camera setup and run a short movement script that saves an image at each capture location. Adds **3**.
