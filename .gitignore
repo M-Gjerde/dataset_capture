@@ -1,0 +1,27 @@
+# Local agent/environment metadata
+.agents/
+.codex/
+.aws/
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Bulk captures and generated outputs
+data/
+captures/
+raw/
+processed/
+tmp/
+output/
+
+# Python/editor/OS artifacts
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.DS_Store
+Thumbs.db
+*.swp
