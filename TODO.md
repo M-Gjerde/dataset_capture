@@ -1,17 +1,18 @@
 # TODO
 
-Start with one usable capture. Assign an owner when starting a task; record the result or blocker in its GitHub issue.
+Once completed we should have one working usable capture and we can scale up from there.
+
 
 ## Milestone:
 - [ ] Choose one pilot object and recover geometry + material parameter under known illumination.
 
 ### 1. Put everything together
 
-- [ ] **Level 1 — Bench capture:** Use the selected camera and controller to save one image with recorded capture settings. Requires **2 + 6**.
-- [ ] **Level 2 — Robot capture:** Mount the working camera setup and run a short movement script that saves an image at each capture location. Adds **3**.
-- [ ] **Level 3 — Controlled illumination:** Repeat the robot capture with fixed, recorded lighting in the blackout room, check leakage and unwanted reflections. Adds **4 + 5**.
-- [ ] **Level 4 — Calibrated capture:** Capture the pilot object with calibrated camera intrinsics/extrinsics, characterized illumination and the agreed image format/metadata. Brings **2–6** together.
-- [ ] **Level 5 — Reconstruction:** Use that capture to recover geometry and material parameters under known illumination, compare rendered and captured images before expanding the dataset.
+- [ ] **1. Bench capture:** Use the selected camera and controller to save one image with recorded capture settings. Requires **2 + 6**.
+- [ ] **2. Robot capture:** Mount the working camera setup and run a short movement script that saves an image at each capture location. Adds **3**.
+- [ ] **3. Controlled illumination:** Repeat the robot capture with fixed, recorded lighting in the blackout room, check leakage and unwanted reflections. Adds **4 + 5**.
+- [ ] **4. Calibrated capture:** Capture the pilot object with calibrated camera intrinsics/extrinsics, characterized illumination and the agreed image format/metadata. Brings **2–6** together.
+- [ ] **5. Reconstruction:** Use that capture to recover geometry and material parameters under known illumination, compare rendered and captured images before expanding the dataset.
 
 ### 2. Camera and Raspberry Pi Hardware
 
@@ -45,3 +46,17 @@ Start with one usable capture. Assign an owner when starting a task; record the 
 - [ ] Camera calibration: Extrinsic parameters and intrinsic parameters.
 - [ ] Settle on final capture format: RAW, white balancing, exposure, gain, gamma etc..
 - [ ] Define image IDs and metadata: camera pose, exposure.
+
+
+
+## Decisions and log:
+
+### Camera Hardware
+
+
+
+
+
+
+
+
