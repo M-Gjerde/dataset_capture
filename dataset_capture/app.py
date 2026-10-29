@@ -208,9 +208,12 @@ def main():
     parser.add_argument("--output", type=Path, default=Path.home() / "captures")
     parser.add_argument("--port", type=int, default=8000)
     parser.add_argument("--preview-fps", type=float, default=3)
+    from .hotspot import add_hotspot_arguments, configure_hotspot
+    add_hotspot_arguments(parser)
     args = parser.parse_args()
     if not 0 < args.preview_fps <= 15:
         parser.error("--preview-fps must be greater than zero and at most 15")
+    configure_hotspot(args, parser)
     camera = SimulatedCamera() if args.simulate else BaslerCamera(args.serial)
     service = CaptureService(camera, args.output, args.preview_fps)
     uvicorn.run(create_app(service), host="127.0.0.1", port=args.port, workers=1, timeout_graceful_shutdown=5)

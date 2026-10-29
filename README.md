@@ -1,5 +1,7 @@
 # Anomaly detection dataset with material decomposition
 
+**New PC? [Quickstart: clone, run, open the camera](QUICKSTART.md).**
+
 A practical dataset of metal and glass objects for geometry and lighting estimation used to train anamoly detectors.
 
 **First milestone:** capture one object with recorded camera poses and light settings, then check whether the data is usable in our renderer.
@@ -11,7 +13,7 @@ A practical dataset of metal and glass objects for geometry and lighting estimat
 
 ## What we have
 
-- UR robot (exact model to check) on a 120 × 80 cm table.
+- UR robot (exact model to check) on a 120 Ã— 80 cm table.
 - Existing cameras (manufacturer, models and interfaces to check).
 - End-effector attachment (QC75 catalogue and a Rhino attachment model in this folder).
 - Room at the Utzon center.

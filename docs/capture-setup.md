@@ -6,9 +6,47 @@ The first implementation covers live preview, camera configuration, fresh softwa
 
 - Ubuntu ARM64 or Raspberry Pi OS 64-bit / Python 3.10+, Basler `pypylon` for USB or GigE cameras.
 - FastAPI / Uvicorn, one process and one camera owner. A lock serializes preview, settings and capture requests.
-- HTML/CSS/JavaScript panel; MJPEG preview at 3 fps by default, reduced to at most 1280 × 960. Preview is deliberately separate from dataset storage.
+- HTML/CSS/JavaScript panel; MJPEG preview at 3 fps by default, reduced to at most 1280 Ã— 960. Preview is deliberately separate from dataset storage.
 - Full pixel arrays in NumPy `.npy` files (no JPEG loss or bit-depth reduction), JSON metadata and SHA-256 hashes. The SDK may unpack packed pixel formats. This is an initial storage format; final dataset interchange format remains to be agreed.
 - SSH port forwarding for the panel/API and rsync over SSH for resumable transfer. The API binds only to loopback and has no separate login.
+
+## Optional desktop hotspot and new-PC launcher
+
+For a new desktop, follow the [Quickstart](../QUICKSTART.md):
+`python scripts/run.py --pi PI_IP` installs desktop dependencies, sets up SSH
+using terminal prompts, connects and opens the browser. The Pi service must
+already be installed. Host transfers use rsync if present, otherwise OpenSSH scp;
+both paths verify the same archived checksums before publishing a capture.
+
+After installing the package, the main commands also accept `--hotspot`:
+
+```sh
+dataset-dashboard --hotspot --pi PI_IP --connect --open-browser
+# Capture service on a host that should itself create the network:
+dataset-capture --hotspot
+# Standalone hotspot script:
+dataset-hotspot
+```
+
+The network is **DatasetCapture**, password **datasetcapture**. The scripts
+request 2.4 GHz and WPA2 for compatibility. Windows uses Windows PowerShell 5.1
+and the Mobile hotspot API; the wireless driver, upstream connection, policy
+and PowerShell script policy must permit it. Linux uses NetworkManager,
+a dedicated profile with autoconnect disabled, and host address `10.42.0.1/24`.
+Use `--hotspot-interface wlan0` with the app/launcher (or `--interface wlan0`
+with `dataset-hotspot`) when there are multiple Linux Wi-Fi adapters.
+Linux may require approval from NetworkManager/Polkit; a single Wi-Fi adapter
+will disconnect from its current network when switched to access-point mode.
+Windows assigns its own hotspot subnet, commonly `192.168.137.0/24`.
+
+Without the flag no hotspot operations run. Failure to start the hotspot stops
+startup with an error. The hotspot remains enabled after the app exits; disable
+it in Windows Settings or, on Linux, with
+`nmcli connection down dataset-capture-hotspot`.
+An already active different Windows hotspot is not replaced.
+No live hotspot change was validated on the development laptop; it previously
+failed client authentication even through Settings. A phone hotspot is still an
+option: omit `--hotspot` and supply the Pi's actual private LAN IP.
 
 ## Network and first connection
 
@@ -186,6 +224,7 @@ approval. Pi dependency installation was started but completion is unverified;
 check apt/dpkg state before resuming installation. No capture service is confirmed
 running on the Pi yet.
 
-The dashboard accepts Pi addresses only within 10.42.0.0/24; changing to another
-network requires updating that validation. Capture data still lives on the Pi
-until pulled with `dataset-host sync`; connection status does not imply a backup.
+The dashboard accepts private IPv4 addresses in 10.0.0.0/8, 172.16.0.0/12 and
+192.168.0.0/16, including Windows and phone hotspots. Individual Save capture
+actions transfer and verify data on the desktop; other Pi data still needs
+`dataset-host sync`. Connection status does not imply a backup.

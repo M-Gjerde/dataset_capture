@@ -5,6 +5,7 @@ import ipaddress
 import json
 import re
 import shutil
+import shlex
 import socket
 import subprocess
 import tempfile
@@ -23,6 +24,7 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 STATIC = Path(__file__).parent / 'static'
 SAVE_LOCK = threading.Lock()
+PRIVATE_NETWORKS = tuple(ipaddress.IPv4Network(net) for net in ("10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"))
 
 
 class LocalSave(BaseModel):
@@ -54,12 +56,19 @@ def save_local_capture(connection, request):
         archive = staging / request.capture_id
         archive.mkdir()
         try:
-            subprocess.run([
-                'rsync', '-rt', '--checksum', '-e',
-                'ssh -o BatchMode=yes -o ConnectTimeout=8 -o ServerAliveInterval=5 -o ServerAliveCountMax=3',
-                '--', f'{target.username}@{target.address}:{source.rstrip("/")}/{request.capture_id}/',
-                str(archive) + '/',
-            ], check=True, capture_output=True, timeout=120)
+            ssh_options = ["-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=yes",
+                           "-o", "ConnectTimeout=8", "-o", "ServerAliveInterval=5",
+                           "-o", "ServerAliveCountMax=3"]
+            if connection.identity:
+                ssh_options += ["-i", connection.identity]
+            source_path = f'{target.username}@{target.address}:{source.rstrip("/")}/{request.capture_id}/'
+            if shutil.which("rsync"):
+                command = ["rsync", "-rt", "--checksum", "-e",
+                           shlex.join(["ssh", *ssh_options]), "--", source_path, str(archive) + "/"]
+            else:
+                # OpenSSH scp is available on Windows; retain checksum validation below.
+                command = ["scp", *ssh_options, "-r", "-p", "--", source_path + ".", str(archive)]
+            subprocess.run(command, check=True, capture_output=True, timeout=120)
             metadata = verify_capture(archive)
             if final.exists() or final.is_symlink():
                 if final.is_symlink() or not final.is_dir():
@@ -92,9 +101,8 @@ class ConnectionTarget(BaseModel):
     @classmethod
     def local_address(cls, value):
         address = ipaddress.IPv4Address(value)
-        if address not in ipaddress.IPv4Network('10.42.0.0/24') or address in (
-                ipaddress.IPv4Address('10.42.0.0'), ipaddress.IPv4Address('10.42.0.1'), ipaddress.IPv4Address('10.42.0.255')):
-            raise ValueError('Use the Pi address on the DatasetCapture hotspot (10.42.0.x)')
+        if not any(address in network for network in PRIVATE_NETWORKS):
+            raise ValueError("Use the Pi private LAN IPv4 address")
         return str(address)
 
     @field_validator('username')
@@ -106,7 +114,8 @@ class ConnectionTarget(BaseModel):
 
 
 class PiConnection:
-    def __init__(self, target=None):
+    def __init__(self, target=None, identity=None):
+        self.identity = str(identity) if identity else None
         self.target = target or ConnectionTarget()
         self.lock = threading.RLock()
         self.process = None
@@ -150,7 +159,7 @@ class PiConnection:
             self.desired = True
             self.last_seen = self.heartbeat = self.latency_ms = None
             self.ssh_error = ''
-            self.state, self.message = 'connecting', 'Connecting to your Pi…'
+            self.state, self.message = 'connecting', 'Connecting to your Piâ€¦'
         return self.snapshot()
 
     def disconnect(self):
@@ -176,12 +185,15 @@ class PiConnection:
         with socket.socket() as sock:
             sock.bind(('127.0.0.1', 0))
             self.port = sock.getsockname()[1]
-        self.process = subprocess.Popen([
+        command = [
             'ssh', '-N', '-T', '-o', 'BatchMode=yes', '-o', 'StrictHostKeyChecking=yes',
             '-o', 'ExitOnForwardFailure=yes', '-o', 'ConnectTimeout=6',
             '-o', 'ServerAliveInterval=3', '-o', 'ServerAliveCountMax=2',
             '-L', f'127.0.0.1:{self.port}:127.0.0.1:8000',
-            f'{self.target.username}@{self.target.address}'], stdin=subprocess.DEVNULL,
+            f'{self.target.username}@{self.target.address}']
+        if self.identity:
+            command[1:1] = ['-i', self.identity]
+        self.process = subprocess.Popen(command, stdin=subprocess.DEVNULL,
             stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
         threading.Thread(target=self._read_ssh_errors, args=(self.process,), daemon=True).start()
 
@@ -202,7 +214,7 @@ class PiConnection:
                         self._terminate()
                         try:
                             self._launch()
-                            self.state, self.message = 'connecting', 'Connecting securely to the Pi…'
+                            self.state, self.message = 'connecting', 'Connecting securely to the Piâ€¦'
                         except OSError:
                             self.state, self.message = 'reconnecting', 'SSH could not start. Check that OpenSSH is installed.'
                     port, process = self.port, self.process
@@ -315,8 +327,25 @@ def main():
     parser.add_argument('--port',type=int,default=8001)
     parser.add_argument('--pi',default='10.42.0.141')
     parser.add_argument('--username',default='cameramodule')
+    parser.add_argument("--identity", type=Path, help="SSH private key")
+    parser.add_argument("--open-browser", action="store_true")
+    parser.add_argument("--connect", action="store_true", help="Connect to the Pi at startup")
+    from .hotspot import add_hotspot_arguments, configure_hotspot
+    add_hotspot_arguments(parser)
     args = parser.parse_args()
-    connection = PiConnection(ConnectionTarget(address=args.pi,username=args.username))
+    try:
+        target = ConnectionTarget(address=args.pi, username=args.username)
+    except ValueError as exc:
+        parser.error(str(exc))
+    configure_hotspot(args, parser)
+    connection = PiConnection(target, identity=args.identity)
+    if args.connect:
+        connection.connect(target)
+    if args.open_browser:
+        import webbrowser
+        timer = threading.Timer(1.5, webbrowser.open, args=(f"http://127.0.0.1:{args.port}",))
+        timer.daemon = True
+        timer.start()
     uvicorn.run(create_desktop_app(connection),host='127.0.0.1',port=args.port,timeout_graceful_shutdown=5)
 
 

@@ -17,13 +17,14 @@ dev = ["pytest>=8,<10", "httpx>=0.27,<1"]
 dataset-capture = "dataset_capture.app:main"
 dataset-host = "dataset_capture.host:main"
 dataset-probe = "dataset_capture.probe:main"
+dataset-hotspot = "dataset_capture.hotspot:main"
 dataset-dashboard = "dataset_capture.desktop:main"
 
 [tool.setuptools.packages.find]
 include = ["dataset_capture*"]
 
 [tool.setuptools.package-data]
-dataset_capture = ["static/*", "protocol.md"]
+dataset_capture = ["static/*", "protocol.md", "*.ps1"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
