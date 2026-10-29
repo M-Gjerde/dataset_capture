@@ -1,0 +1,17 @@
+[Unit]
+Description=Basler dataset capture and control panel
+After=network.target
+
+[Service]
+Type=simple
+User=cameramodule
+WorkingDirectory=/home/cameramodule/dataset_capture
+ExecStart=/home/cameramodule/dataset_capture/.venv/bin/dataset-capture --output /home/cameramodule/captures
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=50
+Environment=PYTHONUNBUFFERED=1
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

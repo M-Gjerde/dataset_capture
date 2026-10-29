@@ -7,6 +7,7 @@ A practical dataset of metal and glass objects for geometry and lighting estimat
 - [TODO](TODO.md): next actions, grouped by subsystem.
 - [Shopping list](docs/shopping-list.md): hardware candidates and blackout prices.
 - [Collaboration](docs/collaboration.md): edit and track work in GitHub's browser UI.
+- [Capture software setup](docs/capture-setup.md): Pi hotspot connection, Basler preview/settings panel, capture API and verified host transfer.
 
 ## What we have
 
@@ -18,3 +19,5 @@ A practical dataset of metal and glass objects for geometry and lighting estimat
 Preferred approach: camera and Raspberry Pi on the end-effector, saving images locally. Camera compatibility and power are not yet resolved.
 
 Keep large captures outside Git, on backed-up shared storage. This repo holds plans, code, calibration files and manifests.
+
+The [radiometric measurement protocol](dataset_capture/protocol.md) documents the sensor-to-host chain, processing evidence, calibration experiments and limits of absolute-scale claims.

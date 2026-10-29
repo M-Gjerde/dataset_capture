@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dataset-capture"
+version = "0.1.0"
+description = "Basler capture service, local control panel, and host synchronization"
+requires-python = ">=3.10"
+dependencies = ["fastapi>=0.115,<1", "uvicorn>=0.30,<1", "numpy>=1.26,<3", "Pillow>=10,<13"]
+
+[project.optional-dependencies]
+basler = ["pypylon>=4,<27"]
+dev = ["pytest>=8,<10", "httpx>=0.27,<1"]
+
+[project.scripts]
+dataset-capture = "dataset_capture.app:main"
+dataset-host = "dataset_capture.host:main"
+dataset-probe = "dataset_capture.probe:main"
+dataset-dashboard = "dataset_capture.desktop:main"
+
+[tool.setuptools.packages.find]
+include = ["dataset_capture*"]
+
+[tool.setuptools.package-data]
+dataset_capture = ["static/*", "protocol.md"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

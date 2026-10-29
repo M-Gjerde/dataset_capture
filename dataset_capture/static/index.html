@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dataset Capture</title><link rel="stylesheet" href="/static/style.css"></head>
+<body>
+<header><div><span class="eyebrow">CAMERA WORKSPACE</span><h1>Dataset Capture</h1></div><span id="badge">Connecting…</span></header>
+<section class="connection-card" aria-label="Raspberry Pi connection">
+<div class="connection-heading"><div><span class="connection-dot" id="connection-dot"></span><strong id="connection-title">Checking connection…</strong><p id="connection-message">Waiting for a reply.</p></div><span id="heartbeat-age">No heartbeat yet</span></div>
+<div class="connection-actions" id="connection-actions" hidden><label>Pi address<input id="pi-address" value="10.42.0.141" autocomplete="off"></label><label>Username<input id="pi-username" value="cameramodule" autocomplete="username"></label><button id="connect-pi" class="primary">Connect</button><button id="disconnect-pi">Disconnect</button></div>
+<div class="health-row"><span id="camera-health">Camera: waiting</span><span id="preview-health">Live image: waiting</span></div>
+<p id="connection-warning" class="connection-warning" hidden>Connection lost. Captures may still be running on the Pi. Do not move the scene until their status is confirmed.</p>
+</section><nav><a href="#live">Live &amp; capture</a><a href="#measurement">Calibration captures</a><a href="#processing">Advanced</a><a href="/api/protocol" target="_blank">Measurement protocol ↗</a></nav>
+<div class="measurement-banner"><strong>Measurement space: camera DN</strong><span>Sensor processing unverified · absolute radiance calibration not established</span></div>
+<main>
+<section class="viewer" id="live"><div class="section-title"><h2>Live view</h2><span id="camera">Waiting for camera</span></div>
+<details class="display-options"><summary>Image display options</summary><div class="view-controls"><label>View<select id="view-mode"><option value="display">Display RGB preview</option><option value="raw">Raw mosaic / DN window</option></select></label><label>Display black (DN)<input id="window-black" type="number" value="0"></label><label>Display white (DN)<input id="window-white" type="number" value="4095"></label><button id="pause-preview">Pause preview</button></div></details>
+<div class="image-wrap"><img id="preview" src="/api/preview.jpg" alt="Live camera preview"><span id="preview-placeholder">Connect your Pi to see the camera</span><span id="demo" hidden>SIMULATED CAMERA</span></div>
+<div class="toolbar"><span id="storage">Checking storage…</span><button id="reconnect">Reconnect camera</button></div>
+<p class="hint">Preview only. Each capture saves the original camera values and settings.</p>
+<details class="inspector"><summary>Inspect original digital numbers</summary><div class="view-controls"><label>X<input id="raw-x" type="number" min="0" value="0"></label><label>Y<input id="raw-y" type="number" min="0" value="0"></label><button id="inspect-raw">Read 8 × 8 samples</button></div><pre id="raw-values">Read samples to inspect the latest acquired frame.</pre><canvas id="histogram" width="800" height="140" aria-label="Histogram of original camera digital numbers"></canvas><p id="raw-summary" class="hint">Code-limit clipping is distinct from measured sensor saturation.</p></details>
+<div class="capture-form"><h2>Save capture</h2><div id="save-location" hidden><label>Save to desktop folder<input id="save-folder" placeholder="/home/magnus/projects/dataset_capture/captures" spellcheck="false"></label><p class="hint">Remembered on this browser. Each capture gets its own folder with original camera data, previews and settings. Pi originals are retained.</p></div><label>Capture ID<input id="capture-id" maxlength="96" spellcheck="false"></label>
+<details><summary>Capture details</summary><label>Pose, lighting &amp; session metadata <small>JSON object</small><textarea id="context" rows="4">{}</textarea></label></details>
+<div class="toolbar"><button id="capture" class="primary" disabled>Save capture</button><button id="new-id">New ID</button></div>
+<p class="hint">For robot capture: wait for the robot to settle, request a unique ID, then wait for the saved acknowledgement.</p>
+<pre id="result" aria-live="polite">No capture saved yet.</pre></div>
+<details class="capture-form" id="measurement"><summary>Calibration captures</summary><h2>Exposure series</h2><p class="hint">A repeatable exposure sweep. Camera settings are locked during acquisition; the starting exposure is restored afterward. Source brightness and optics must remain fixed.</p>
+<div class="form-grid"><label>Series ID<input id="series-id" maxlength="65"></label><label>Measurement type<select id="series-kind"><option value="linearity">Linearity / exposure response</option><option value="dark">Dark frames</option><option value="flat">Flat field / noise pairs</option><option value="radiance_reference">Radiance reference</option><option value="emitter">Emitter observation</option><option value="validation">Held-out validation</option><option value="scene">Scene frames</option></select></label></div>
+<label>Exposure times (ms, comma-separated)<input id="series-exposures" value="1, 2, 5, 10"></label>
+<div class="form-grid"><label>Repeats per exposure<input id="series-repeats" type="number" min="1" max="100" value="4"></label><label>Discard settling frames<input id="series-settle" type="number" min="0" max="10" value="1"></label></div>
+<label class="check-label"><input id="dark-confirm" type="checkbox"> For dark frames: I have fully blocked light from the sensor.</label>
+<p class="hint">The capture metadata JSON above is attached to every frame. For a reference measurement, record the instrument/certificate, spectrum or band, units, measured value and uncertainty there. Selecting “Radiance reference” does not calibrate the camera.</p>
+<div class="toolbar"><button id="start-series" class="primary">Start measurement series</button><button id="cancel-series">Stop after current frame</button></div><progress id="series-progress" max="1" value="0"></progress><pre id="series-status">No series started.</pre></details>
+<details class="capture-form" id="processing"><summary>Advanced · sensor processing</summary><div class="section-title"><h2>Sensor processing audit</h2><button id="audit-refresh">Read camera state</button></div>
+<p class="hint">This audits exposed controls. Missing features remain unknown. Fixed sensor corrections, analog circuitry, clipping and firmware order require the exact camera manual and physical measurements.</p>
+<div class="toolbar"><button id="enable-chunks">Enable available frame metadata</button><button id="download-audit">Export full state snapshot</button></div><p id="audit-summary" class="hint">No audit read yet.</p><div id="audit-checks"></div></details>
+</section>
+<aside><div class="section-title"><h2>Camera</h2><button id="refresh">Refresh</button></div>
+<p class="hint">Adjust brightness here. Additional controls are grouped below.</p>
+<div id="settings"><p class="hint">Connect a camera to load settings.</p></div>
+<div class="presets"><button id="export">Export settings</button><label class="file-button">Import settings<input type="file" id="import" accept="application/json"></label></div>
+<details><summary>Camera setup notes</summary><p class="hint">Apply ROI offsets and dimensions one at a time; valid ranges change with each setting. Keep a dark offset if needed to preserve noise below the mean; do not blindly force black level to zero.</p></details>
+<details class="rig-setup"><summary>Session &amp; lens details</summary><p class="hint">Operator-entered facts are copied into each capture. Empty fields remain unknown.</p>
+<label>Session / experiment ID<input id="setup-session"></label><label>Lens ID / model<input id="setup-lens"></label><label>Aperture (f-number)<input id="setup-aperture" type="number" min="0.1" step="any"></label><label>Focus distance (m)<input id="setup-focus" type="number" min="0" step="any"></label><label>Filters / polarizer / ND<input id="setup-filters"></label><label>Calibration / reference IDs<input id="setup-calibration"></label><label>Notes<textarea id="setup-notes" rows="3"></textarea></label><button id="save-setup">Save setup for subsequent captures</button><p id="setup-state" class="hint">Setup not loaded.</p></details></aside>
+</main><div id="message" role="status" hidden></div><script src="/static/app.js"></script>
+</body></html>

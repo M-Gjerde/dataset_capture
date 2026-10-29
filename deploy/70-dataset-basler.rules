@@ -1,0 +1,2 @@
+# Allow the capture-service group to access this Basler USB camera model.
+SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTR{idVendor}=="2676", ATTR{idProduct}=="ba05", GROUP="dataset-camera", MODE="0660"
