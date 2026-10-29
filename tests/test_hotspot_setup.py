@@ -161,3 +161,68 @@ def test_launcher_reuses_dedicated_ssh_key(tmp_path):
         assert launcher.setup_ssh("10.233.204.25", "cameramodule") == key
     assert run.call_count == 1
     assert run.call_args.args[0][1:3] == ["-i", str(key)]
+
+
+def load_launcher():
+    path = Path(__file__).parents[1] / "scripts" / "run.py"
+    spec = importlib.util.spec_from_file_location("setup_launcher", path)
+    launcher = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(launcher)
+    return launcher
+
+
+@pytest.mark.parametrize("existing", [False, True])
+def test_environment_bootstraps_missing_pip_even_with_stamp(tmp_path, existing):
+    launcher = load_launcher()
+    target = tmp_path / ".venv"
+    python = target / ("Scripts/python.exe" if launcher.os.name == "nt" else "bin/python")
+    if existing:
+        python.parent.mkdir(parents=True)
+        python.touch()
+    (tmp_path / "pyproject.toml").write_text("project")
+    target.mkdir(exist_ok=True)
+    stamp = target / ".desktop-requirements"
+    stamp.write_text(hashlib.sha256(b"project").hexdigest())
+    replies = [SimpleNamespace(returncode=1), SimpleNamespace(returncode=0),
+               SimpleNamespace(returncode=0), SimpleNamespace(returncode=0)]
+    with patch.object(launcher, "ROOT", tmp_path), \
+         patch.object(launcher.subprocess, "run", side_effect=replies) as process, \
+         patch.object(launcher, "run") as run:
+        assert launcher.environment() == python
+    commands = [call.args[0] for call in process.call_args_list]
+    assert any("ensurepip" in command for command in commands)
+    assert any("install" in call.args[0] for call in run.call_args_list)
+    if not existing:
+        assert "--without-pip" in run.call_args_list[0].args[0]
+
+
+def test_environment_reports_missing_ensurepip_without_success_stamp(tmp_path):
+    launcher = load_launcher()
+    target = tmp_path / ".venv"
+    python = target / ("Scripts/python.exe" if launcher.os.name == "nt" else "bin/python")
+    python.parent.mkdir(parents=True)
+    python.touch()
+    replies = [SimpleNamespace(returncode=1),
+               SimpleNamespace(returncode=1, stderr="No module named ensurepip", stdout="")]
+    with patch.object(launcher, "ROOT", tmp_path), \
+         patch.object(launcher.subprocess, "run", side_effect=replies), \
+         patch.object(launcher, "run") as run:
+        with pytest.raises(RuntimeError, match="python3-venv"):
+            launcher.environment()
+    run.assert_not_called()
+    assert not (target / ".desktop-requirements").exists()
+
+
+def test_environment_reuses_healthy_install(tmp_path):
+    launcher = load_launcher()
+    target = tmp_path / ".venv"
+    python = target / ("Scripts/python.exe" if launcher.os.name == "nt" else "bin/python")
+    python.parent.mkdir(parents=True)
+    python.touch()
+    (tmp_path / "pyproject.toml").write_text("project")
+    (target / ".desktop-requirements").write_text(hashlib.sha256(b"project").hexdigest())
+    with patch.object(launcher, "ROOT", tmp_path), \
+         patch.object(launcher.subprocess, "run", return_value=SimpleNamespace(returncode=0)), \
+         patch.object(launcher, "run") as run:
+        assert launcher.environment() == python
+    run.assert_not_called()

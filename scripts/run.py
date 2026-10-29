@@ -18,15 +18,49 @@ def run(command, **kwargs):
 
 
 def environment():
+    """Create or repair the local venv without requiring pip in the host Python."""
+    if sys.version_info < (3, 10):
+        raise RuntimeError("Install a full Python 3.10+ distribution, then retry.")
     target = ROOT / ".venv"
     python = target / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
     if not python.exists():
-        run([sys.executable, "-m", "venv", target])
+        try:
+            # Bootstrap pip separately so a failed ensurepip leaves a repairable venv.
+            run([sys.executable, "-m", "venv", "--without-pip", target])
+        except subprocess.CalledProcessError as exc:
+            raise RuntimeError(
+                "Could not create .venv. On Ubuntu/Debian install python3-venv; "
+                "on Windows repair Python and include pip/venv."
+            ) from exc
+    temporary = target / ".setup-tmp"
+    temporary.mkdir(parents=True, exist_ok=True)
+    setup_env = dict(os.environ, TMP=str(temporary), TEMP=str(temporary))
+    probe = subprocess.run([str(python), "-m", "pip", "--version"],
+                           capture_output=True, text=True, env=setup_env)
+    repaired = probe.returncode != 0
+    if repaired:
+        print("Installing pip into .venv...", flush=True)
+        result = subprocess.run([str(python), "-m", "ensurepip", "--upgrade"],
+                                capture_output=True, text=True, env=setup_env)
+        if result.returncode:
+            detail = (result.stderr or result.stdout).strip()
+            raise RuntimeError(
+                "Could not bootstrap pip in .venv. On Ubuntu/Debian install "
+                "python3-venv and python3-pip; on Windows repair the full Python "
+                "installation with pip enabled, then rerun scripts/setup_env.py. "
+                + detail
+            )
+        probe = subprocess.run([str(python), "-m", "pip", "--version"],
+                               capture_output=True, text=True, env=setup_env)
+        if probe.returncode:
+            raise RuntimeError("pip is still unavailable in .venv after ensurepip; repair Python.")
     digest = hashlib.sha256((ROOT / "pyproject.toml").read_bytes()).hexdigest()
     stamp = target / ".desktop-requirements"
-    if not stamp.exists() or stamp.read_text().strip() != digest:
+    packages = subprocess.run([str(python), "-c", "import fastapi, uvicorn, numpy, PIL"],
+                              capture_output=True, env=setup_env)
+    if repaired or packages.returncode or not stamp.exists() or stamp.read_text().strip() != digest:
         print("Installing desktop dependencies...", flush=True)
-        run([python, "-m", "pip", "install", "-e", str(ROOT)])
+        run([python, "-m", "pip", "install", "-e", str(ROOT)], env=setup_env)
         stamp.write_text(digest)
     return python
 

@@ -15,7 +15,11 @@ The first implementation covers live preview, camera configuration, fresh softwa
 For a new desktop, follow the [Quickstart](../QUICKSTART.md):
 `python scripts/run.py --pi PI_IP` installs desktop dependencies, sets up SSH
 using terminal prompts, connects and opens the browser. The Pi service must
-already be installed. Host transfers use rsync if present, otherwise OpenSSH scp;
+already be installed. To prepare or repair the environment separately, run
+`python scripts/setup_env.py`. Both commands create `.venv` and bootstrap missing
+pip with Python ensurepip; global pip is not required. If Python omits ensurepip,
+install python3-venv/python3-pip on Ubuntu/Debian or repair the full Python
+installation on Windows, then retry. Host transfers use rsync if present, otherwise OpenSSH scp;
 both paths verify the same archived checksums before publishing a capture.
 
 After installing the package, the main commands also accept `--hotspot`:

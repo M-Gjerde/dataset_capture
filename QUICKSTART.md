@@ -16,4 +16,6 @@ Requires **Git**, **Python 3.10+** (with pip/venv), and **OpenSSH Client** (`ssh
 
 **Optional PC hotspot:** run `python scripts/run.py --hotspot`, join **DatasetCapture** / **datasetcapture** from the Pi, then enter its new IP when prompted. Windows needs Mobile hotspot support and an upstream connection; Linux needs NetworkManager and may request network privileges. A single Linux Wi-Fi adapter switches away from its existing network.
 
+If setup previously failed or pip is missing, run `python scripts/setup_env.py` once, then retry the run command. It creates/repairs `.venv` and bootstraps pip; global pip is not required.
+
 The Pi must already have its camera service installed and running; see [Pi setup](docs/capture-setup.md). Stop the app with Ctrl+C. An explicitly started hotspot stays on until disabled in system settings.
